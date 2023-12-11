@@ -1,0 +1,317 @@
+
+<!doctype html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            window.onload = function() {   
+                var socket = io.connect();
+                socket.on('counter', function(data) {
+					var repeat = setInterval(function(){
+						$('#sm').html(data--);
+						if(data==-1){
+							$('#sm').html("wait");
+							location.href="/camera"
+							clearInterval(repeat);
+						}
+					},1000);
+                })
+                socket.emit('sound','<%= sound %>');
+                            
+                if('<%= face %>' == 'bad'){
+					$('#sm').css('border-radius','120px 120px 20px 20px');
+                    $('#sbl').css('border-top-color','rgb(188,0,0)');
+                    $('#sbr').css('border-top-color','rgb(188,0,0)');
+                }
+            }
+        </script>
+        <style>
+            body {
+                background-color: #e5b081;
+                margin: 0px;
+                overflow: hidden;
+            }
+
+            #start {
+                width: 300px;
+                height: 250px;
+                background-color: #fff;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                margin-top: -130px;
+                margin-left: -150px;
+                border-radius: 70px;
+                overflow: hidden;
+                border: 10px solid #9f7847;
+            }
+
+            #sbr {
+                position: absolute;
+                background-color: black;
+                border-radius: 100%;
+                width: 50px;
+                height: 50px;
+                top: 50%;
+                left: 20%;
+                margin-top: -40px;
+                border-top: 10px solid #ff9fec;
+            }
+
+            #sbl {
+                position: absolute;
+                background-color: black;
+                border-radius: 100%;
+                width: 50px;
+                height: 50px;
+                top: 50%;
+                right: 20%;
+                margin-top: -40px;
+                border-top: 10px solid #ff9fec;
+            }
+
+
+            #sm {
+                overflow: hidden;
+                position: absolute;
+                width: 100px;
+                height: 50px;
+                line-height : 50px;
+                border-top-left-radius: 20px;
+                border-top-right-radius: 20px;
+                border-bottom-right-radius: 120px;
+                border-bottom-left-radius: 120px;
+                left: 100px;
+                bottom: 40px;
+                background-color: #ed5e5e;
+                color : white;
+                text-align : center;
+            }
+
+
+            #sh {
+                position: absolute;
+                top: -46px;
+                width: 350px;
+                left: -50px;
+                height: 111px;
+                background-color: #714e2c;
+
+            }
+			#explain_button{
+				width : 70px;
+				height : 70px;
+				position : absolute;
+				top : 10px;
+				right : 10px;
+				background-color : #714e2c;
+				border-radius : 100%;
+				border : 2px solid #9f7847;
+				color : white;
+				text-align : center;
+				line-height : 70px;
+				z-index : 1;
+			}
+			
+			#explain_background{
+				width : 100%;
+				height : 480px;
+				background-color :#714e2c;
+				position : absolute;
+				top:0px;
+				left :0px;
+				z-index : 0;
+				opacity : 0.7;
+			}
+			.explain{
+				display : none;
+			}
+			
+			#explain_menu{
+				width : 300px;
+				height : 30px;
+				background-color : #714e2c;
+				border : 2px solid #9f7847;
+				border-radius : 20px;
+				position : absolute;
+				left : 50%;
+				margin-left : -150px;
+				top: 40px;
+				color : white;
+				z-index : 1;
+			}
+			
+			#explain_O,#explain_X{
+				width : 50%;
+				height : 100%;
+				float : left;
+				text-align : center;
+				line-height : 30px;
+			}
+			
+			#explain_O{
+				background-color :#9f7847;
+				border-top-left-radius :20px;
+				border-bottom-left-radius :20px;
+			}
+			
+			#explain_X{
+				border-top-right-radius :20px;
+				border-bottom-right-radius :20px;
+			}
+			
+			.explain_content{
+				width : 700px;
+				height : 350px;
+				border-radius : 20px;
+				position : absolute;
+				left : 50%;
+				margin-left : -350px;
+				top: 40px;
+			}
+			
+			.explain_img{
+				position : relative;
+				top : 40px;
+				width : 30%;
+				height : 300px;
+				display : inline-block;
+				margin-left : 12px;
+			}
+			
+			.explain_img_img{
+				width : 100%;
+				height : 198px;
+				border : 2px solid #9f7847;
+			}
+			
+			.explain_img_explain{
+				width : 100%;
+				height : 50px;
+				background-color : #714e2c;
+				border : 2px solid #9f7847;
+				color : white;
+				text-align : center;
+				line-height : 50px;
+				font-size : 13px;
+			}
+			
+			.explain_number{
+				float :right;
+				right : -4px;
+				position : relative;
+				top: 35px;
+				width : 30px;
+				height : 30px;
+				background-color : #714e2c;
+				border : 2px solid #9f7847;
+				line-height : 30px;
+				text-align : center;
+				color : white;
+			}
+
+        </style>
+    </head>
+    <body>
+        <div id="start">
+            <div id="sh"></div>
+            <div id="sbr"></div>
+            <div id="sbl"></div>
+            <div id="sm">
+				Not exist
+            </div>
+        </div>
+        <div id="explain_button" onclick="explain_function()">
+			설명
+        </div>
+        <div id="explain_background" class="explain">
+        </div>
+		<div class="explain">
+			<div id="explain_menu">
+				<div id="explain_O" onclick="menu_O_function()">재활용방법</div>
+				<div id="explain_X" onclick="menu_X_function()">검출방법</div>
+			</div>
+			<div class="explain_content">
+				<div class="explain_img">
+					<div class="explain_number">1</div>
+					<img class="explain_img_img" src="/img/step1">
+					<div class="explain_img_explain">라벨을 제거한다.</div>
+				</div>
+				<div class="explain_img">
+					<div class="explain_number">2</div>
+					<img class="explain_img_img" src="/img/step2">
+					<div class="explain_img_explain">불투명 플라스틱을 제거한다.</div>
+				</div>
+				
+				<div class="explain_img">
+					<div class="explain_number">3</div>
+					<img class="explain_img_img" src="/img/step3">
+					<div class="explain_img_explain">찌끄려트려 버린다.</div>
+				</div>
+			</div>
+			<div class="explain_content">
+				<div class="explain_img">
+					<div class="explain_number">1</div>
+					<img class="explain_img_img" src="/img/robot1">
+					<div class="explain_img_explain">성분을 검사한다.</div>
+				</div>
+				<div class="explain_img">
+					<div class="explain_number">2</div>
+					<img class="explain_img_img" src="/img/robot2">
+					<div class="explain_img_explain">글자를 검사한다.</div>
+				</div>
+				
+				<div class="explain_img">
+					<div class="explain_number">3</div>
+					<img class="explain_img_img" src="/img/robot3">
+					<div class="explain_img_explain">색상을 검사한다.</div>
+				</div>
+			</div>
+			
+		
+			
+		</div>
+    </body>
+    <script>
+		function explain_function(){
+			switch($('.explain').css('display')){
+				case "none" :
+					$('.explain').css('display','block');
+					$('#explain_button').html("닫기");
+					$('.explain_content').eq(1).css('display','none');
+					$('.explain_content').eq(0).css('display','block');
+									$('#explain_O').css('background-color',"rgb(159, 120, 71)");
+				$('#explain_X').css('background-color',"rgba(0, 0, 0, 0)");
+				break;
+				
+				case "block" : 
+					$('.explain').css('display','none');
+					$('#explain_button').html("설명");
+				break;
+			}
+		}
+		
+		function menu_O_function(){
+			if($('#explain_O').css('background-color') != "rgb(159, 120, 71)"){
+				$('#explain_O').css('background-color',"rgb(159, 120, 71)");
+				$('#explain_X').css('background-color',"rgba(0, 0, 0, 0)");
+				$('.explain_content').eq(1).css('display','none');
+				$('.explain_content').eq(0).css('display','block');
+			}
+		}
+		
+		function menu_X_function(){
+			if($('#explain_X').css('background-color') != "rgb(159, 120, 71)"){
+				$('#explain_X').css('background-color',"rgb(159, 120, 71)");
+				$('#explain_O').css('background-color',"rgba(0, 0, 0, 0)");
+				$('.explain_content').eq(0).css('display','none');
+				$('.explain_content').eq(1).css('display','block');
+			}
+		}
+		
+		
+    </script>
+
+    </html>

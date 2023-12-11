@@ -1,0 +1,310 @@
+// 모듈 추출
+var http = require('http');
+var socketio = require('socket.io');
+var express = require('express');
+var fs = require('fs');
+const imageToRgbaMatrix = require('image-to-rgba-matrix');
+const vision = require('@google-cloud/vision');
+const client = new vision.ImageAnnotatorClient();
+const PiCamera = require('pi-camera');
+var player = require('play-sound')(opts = {})
+var mqtt = require('mqtt');
+var health = {
+    'sensor': 0,
+    'motor': 0
+};
+var io;
+// 카메라 설정
+const myCamera = new PiCamera({
+    mode: 'photo',
+    output: `${ __dirname }/test.jpg`,
+    width: 640,
+    height: 480,
+    nopreview: true,
+});
+
+
+// 서버 설정 및 시작
+var app = express();
+app.set('views', '');
+app.set('view engine', 'ejs');
+
+app.use(express.urlencoded({
+    extended: false
+}));
+app.use(express.json());
+
+var server_start = setInterval(function () {
+    if (health.sensor == 1 && health.motor == 1) {
+        var server = http.createServer(app).listen(8080, function () {
+            console.log('server on');
+        });
+        io = socketio(server);
+        io.sockets.on('connection', function (socket) {
+            socket.on('sound', function (data) {
+                console.log(data);
+                sound(data + '.mp3');
+            })
+
+        });
+        mqtt_client.publish('sensor', "wait");
+        clearInterval(server_start);
+    } else {
+        (health.sensor != 1) ? mqtt_client.publish('sensor', "reset") : mqtt_client.publish('motor', "reset");
+        console.log("not connected");
+    }
+}, 1000)
+
+
+// 라우팅(page)
+app.get('/', function (req, res) {
+    res.render('index.ejs', {
+        sound: 'hello',
+        face: 'good'
+    })
+});
+
+
+app.get('/analysis', function (req, res) {
+    res.render('analysis.ejs')
+});
+
+
+// 라우팅(function)
+app.get('/camera', function (req, res) {
+    myCamera.snap()
+        .then((result) => {
+            object_search();
+            res.redirect('/analysis');
+        })
+        .catch((error) => {
+            console.log(error);
+        });
+});
+
+app.get('/fail/:name', function (req, res) {
+    res.render('index.ejs', {
+        sound: req.params.name,
+        face: 'bad'
+    })
+});
+
+app.get('/success', function (req, res) {
+    // motor on
+    res.render('index.ejs', {
+        sound: 'success',
+        face: 'happy'
+    })
+});
+
+// 라우팅(img)
+app.get('/test', function (req, res) {
+    fs.readFile('test.jpg', function (error, data) {
+        res.writeHead(200, {
+            'Content-Type': 'text/html'
+        });
+        res.end(data);
+    });
+});
+app.get('/img/:name', function (req, res) {
+    fs.readFile('img/' + req.params.name + '.png', function (error, data) {
+        res.writeHead(200, {
+            'Content-Type': 'text/html'
+        });
+        res.end(data);
+    });
+});
+
+
+// mqtt 통신
+var mqtt_client = mqtt.connect('mqtt://192.168.0.51')
+
+mqtt_client.on('connect', function () {
+    mqtt_client.publish('sensor', "reset");
+    mqtt_client.publish('motor', "reset");
+    mqtt_client.subscribe('raspi', function (err) {
+        if (!err) {
+            console.log('subscribe :  raspi');
+        }
+    })
+})
+
+mqtt_client.on('message', function (topic, message) {
+    if (message == "input") {
+        console.log("message : " + message);
+        io.sockets.emit('counter', 3);
+        mqtt_client.publish('sensor', "analysis");
+        sound("camera.mp3");
+    } else if (String(message).split('-')[0] == 'connect') {
+        console.log(String(message));
+        health[String(message).split('-')[1]] = 1;
+    } else {
+        weight = parseInt(message);
+    }
+})
+
+
+// 검사
+var weight = 0;
+var area;
+async function object_search() {
+    var object_test = false;
+    mqtt_client.publish('sensor', "get_weight");
+
+    // 검사영역
+    const [result2] = await client.objectLocalization('test.jpg');
+    try {
+        result2.localizedObjectAnnotations[0].boundingPoly.normalizedVertices;
+        const object = result2.localizedObjectAnnotations[0].boundingPoly.normalizedVertices;
+
+        area = {
+            xs: parseInt(object[0].x * 640),
+            xe: parseInt(object[1].x * 640),
+            ys: parseInt(object[1].y * 480),
+            ye: parseInt(object[3].y * 480)
+        };
+        
+        io.sockets.emit('area', area);
+    } catch (e) {
+        console.log("물체 감지X");
+
+    }
+    const [result] = await client.labelDetection('test.jpg');
+    const objects = result.labelAnnotations;
+
+
+    console.log('성분분석중');
+    objects.forEach(function (objects, index) {
+        io.sockets.emit('ingredient_object', objects.description);
+        if (objects.description.indexOf('bottle') != -1 ||
+            objects.description.indexOf('Bottle') != -1 ||
+            objects.description.indexOf('Drink') != -1 ||
+            objects.description.indexOf('drink') != -1 ||
+            objects.description.indexOf('Plastic') != -1 ||
+            objects.description.indexOf('Glass') != -1) {
+            object_test = true;
+        }
+    });
+
+    console.log('성분분석완료');
+    if (object_test == true && weight < 420000) {
+        io.sockets.emit('complete', '성분분석완료-성공-1');
+        setTimeout(function () {
+            text_search(result);
+        }, 3000)
+    } else {
+        io.sockets.emit('complete', '성분분석완료-실패-1');
+        mqtt_client.publish('motor', "up");
+    }
+}
+
+
+async function text_search() {
+    console.log("글자분석중");
+    var text_test = true;
+    const [result] = await client.textDetection('test.jpg');
+    const detections = result.textAnnotations;
+    detections.forEach(function (text, index) {
+        io.sockets.emit('ingredient_text', text.description);
+        if (text.description) {
+            text_test = false;
+        }
+        console.log(text.description);
+    });
+    console.log("글자분석완료");
+    if (text_test == true) {
+        io.sockets.emit('complete', '글자분석완료-성공-2');
+        setTimeout(function () {
+            color_search();
+        }, 3000)
+    } else {
+        io.sockets.emit('complete', '글자분석완료-실패-2');
+        mqtt_client.publish('motor', "up");
+    }
+}
+
+function color_search() {
+    console.log("색깔분석중");
+    // 변수 초기화
+    var color_test = true;
+    var pal = {
+        'white': 0,
+        'black': 0,
+        'red': 0,
+        'green': 0,
+        'blue': 0
+    }
+    pal['white']['state'] = 0;
+
+    imageToRgbaMatrix('test.jpg').then(function (color) {
+        color.forEach(function (color, row) {
+            color.forEach(function (color, col) {
+                // 특정 영역 검색
+                if (col >= area.xs && col <= area.xe && row >= 115 && row <= area.ye) {
+                    // 표준편차 구하기
+                    var average = (parseInt(color[0]) + parseInt(color[1]) + parseInt(color[2])) / 3
+                    var sum = 0;
+                    for (j = 0; j < 3; j++) {
+                        sum += Math.pow(color[j] - average, 2);
+                    }
+                    var std = parseInt(Math.sqrt(sum / 3))
+
+                    // 표준편차를 이용한 색구분
+                    if (std <= 15) {
+                        if (average > 200) {
+                            if ((col < area.xs + 50) || (col > area.xe + 50)) {
+                                pal['white'] += 300;
+                                console.log("DDgang");
+                            } else {
+                                pal['white']++;
+                            }
+
+                        } else if (average < 40) {
+                            pal['black']++;
+                        }
+                    } else {
+                        if (color[0] > color[1] && color[0] > color[2]) {
+                            pal['red']++;
+                        } else if (color[1] > color[2]) {
+                            pal['green']++;
+                        } else {
+                            pal['blue']++;
+                        }
+                    }
+                }
+            });
+        });
+
+
+        Object.keys(pal).forEach(function (key) {
+            console.log(key + ':' + pal[key]);
+            if (key == 'white' ? pal[key] > 5000 : pal[key] >= 10) {
+                color_test = false;
+                console.log(key + "검출")
+                io.sockets.emit('ingredient_color', key);
+            }
+
+        });
+
+        console.log("색깔분석완료");
+        if (color_test == true) {
+            setTimeout(function () {
+                io.sockets.emit('complete', '색깔분석완료-성공-3');
+                mqtt_client.publish('motor', "down");
+            }, 2000)
+        } else {
+            io.sockets.emit('complete', '색깔분석실패-실패-3');
+            mqtt_client.publish('motor', "up");
+        }
+    });
+}
+
+// audio
+var audio = 0;
+
+function sound(data) {
+    if (audio != 0) {
+        audio.kill();
+    }
+    audio = player.play('audio/' + data);
+}
