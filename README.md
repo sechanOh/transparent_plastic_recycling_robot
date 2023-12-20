@@ -1,4 +1,4 @@
-# transparent plastic recycling robot
+# Transparent Plastic Recycling Robot
 ## 1. 프로젝트 요약
 ### 1-1. 설명
 플라스틱 중에서도 투명한 플라스틱만 따로 모을 수 있다면, 재활용률을 높일 수 있을 것이다.
