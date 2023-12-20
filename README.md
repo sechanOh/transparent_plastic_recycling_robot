@@ -22,7 +22,7 @@
 
 ## 2. 프로젝트 구현
 ### 2-1. 데모 영상
-[![youtube playlist](http://img.youtube.com/vi/KMXNRqNWe4/0.jpg)](https://www.youtube.com/playlist?list=PLx5EbqT-6Y08yqIOMzT9wz_smV_qlpFhX)
+[![youtube playlist](http://img.youtube.com/vi/-KMXNRqNWe4/0.jpg)](https://www.youtube.com/playlist?list=PLx5EbqT-6Y08yqIOMzT9wz_smV_qlpFhX)
 ### 2-2. 작품 사진
 ![작품사진](https://github.com/Ohsechan/transparent_plastic_recycling_robot/assets/77317210/6466b145-7edc-47ed-a163-287bc5f5a7bc)
 ### 2-3. 전체 시스템 구성도
