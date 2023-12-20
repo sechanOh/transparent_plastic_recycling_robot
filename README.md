@@ -29,3 +29,4 @@
 ![전체 시스템 구성도](https://github.com/Ohsechan/transparent_plastic_recycling_robot/assets/77317210/8babe390-7c01-474f-a8a6-e3e8e5c8c39e)
 ### 2-4. 투명 폐페트병 분류 과정
 ![투명 폐페트병 분류 과정](https://github.com/Ohsechan/transparent_plastic_recycling_robot/assets/77317210/5e523647-1e76-46d4-9de9-6770a91d1d3e)
+
